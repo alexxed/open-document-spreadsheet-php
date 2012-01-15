@@ -11,18 +11,17 @@ class OpenDocument_Spreadsheet_Writer {
 	
 	protected $strFile;
 	protected $hndContent;
-	protected $strTmpDir;
+	protected $strContentFile;
 	protected $arrRow;
 	
 	
 	public function __construct($strFile) {
 	    $this->strFile = $strFile;
-	    $this->strTmpDir = uniqid(dirname($this->strFile) . '/' . basename($this->strFile) . '_');
-	    mkdir($this->strTmpDir);
+	    $this->strContentFile = uniqid(dirname($this->strFile) . '/' . basename($this->strFile) . '_');
 	}
 	
 	public function startDoc() {
-	    $this->hndContent = fopen($this->strTmpDir . '/content.xml', 'w');
+	    $this->hndContent = fopen($this->strContentFile, 'w');
 		fwrite($this->hndContent, '<?xml version="1.0" encoding="UTF-8"?><office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0" xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0" xmlns:number="urn:oasis:names:tc:opendocument:xmlns:datastyle:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0" xmlns:chart="urn:oasis:names:tc:opendocument:xmlns:chart:1.0" xmlns:dr3d="urn:oasis:names:tc:opendocument:xmlns:dr3d:1.0" xmlns:math="http://www.w3.org/1998/Math/MathML" xmlns:form="urn:oasis:names:tc:opendocument:xmlns:form:1.0" xmlns:script="urn:oasis:names:tc:opendocument:xmlns:script:1.0" xmlns:ooo="http://openoffice.org/2004/office" xmlns:ooow="http://openoffice.org/2004/writer" xmlns:oooc="http://openoffice.org/2004/calc" xmlns:dom="http://www.w3.org/2001/xml-events" xmlns:xforms="http://www.w3.org/2002/xforms" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" office:version="1.0">');
 		fwrite($this->hndContent, '<office:scripts/>');
 		fwrite($this->hndContent, '<office:font-face-decls/>');
@@ -410,40 +409,28 @@ class OpenDocument_Spreadsheet_Writer {
 	}
 	
     public function saveOds() {
-    	file_put_contents($this->strTmpDir . '/mimetype','application/vnd.oasis.opendocument.spreadsheet');
-    	file_put_contents($this->strTmpDir . '/meta.xml', $this->getMeta('en-US'));
-    	file_put_contents($this->strTmpDir . '/styles.xml', $this->getStyle());
-    	file_put_contents($this->strTmpDir . '/settings.xml', $this->getSettings());
-    	mkdir($this->strTmpDir . '/META-INF/');
-    	mkdir($this->strTmpDir . '/Configurations2/');
-    	mkdir($this->strTmpDir . '/Configurations2/acceleator/');
-    	mkdir($this->strTmpDir . '/Configurations2/images/');
-    	mkdir($this->strTmpDir . '/Configurations2/popupmenu/');
-    	mkdir($this->strTmpDir . '/Configurations2/statusbar/');
-    	mkdir($this->strTmpDir . '/Configurations2/floater/');
-    	mkdir($this->strTmpDir . '/Configurations2/menubar/');
-    	mkdir($this->strTmpDir . '/Configurations2/progressbar/');
-    	mkdir($this->strTmpDir . '/Configurations2/toolbar/');
-    	file_put_contents($this->strTmpDir . '/META-INF/manifest.xml',$this->getManifest());
-    	shell_exec(sprintf('cd %s/;zip -r ../%s ./', $this->strTmpDir, escapeshellarg($this->strFile)));
+
+    	$objZipArchive = new ZipArchive();
+    	$objZipArchive->open($this->strFile, ZipArchive::CREATE);
+    	$objZipArchive->addFile($this->strContentFile, 'content.xml');
+    	$objZipArchive->addEmptyDir('META-INF/');
+    	$objZipArchive->addEmptyDir('/Configurations2/');
+    	$objZipArchive->addEmptyDir('/Configurations2/acceleator/');
+    	$objZipArchive->addEmptyDir('/Configurations2/images/');
+    	$objZipArchive->addEmptyDir('/Configurations2/popupmenu/');
+    	$objZipArchive->addEmptyDir('/Configurations2/statusbar/');
+    	$objZipArchive->addEmptyDir('/Configurations2/floater/');
+    	$objZipArchive->addEmptyDir('/Configurations2/menubar/');
+    	$objZipArchive->addEmptyDir('/Configurations2/progressbar/');
+    	$objZipArchive->addEmptyDir('/Configurations2/toolbar/');
+    	$objZipArchive->addFromString('mimetype', 'application/vnd.oasis.opendocument.spreadsheet');
+    	$objZipArchive->addFromString('meta.xml', $this->getMeta('en-US'));
+    	$objZipArchive->addFromString('styles.xml', $this->getStyle());
+    	$objZipArchive->addFromString('settings.xml', $this->getSettings());
+    	$objZipArchive->addFromString('META-INF/manifest.xml', $this->getManifest());
+    	$objZipArchive->close();
     	
-    	unlink($this->strTmpDir . '/mimetype');
-    	unlink($this->strTmpDir . '/meta.xml');
-    	unlink($this->strTmpDir . '/content.xml');
-    	unlink($this->strTmpDir . '/styles.xml');
-    	unlink($this->strTmpDir . '/settings.xml');
-    	unlink($this->strTmpDir . '/META-INF/manifest.xml');
-    	rmdir($this->strTmpDir . '/META-INF/');
-    	rmdir($this->strTmpDir . '/Configurations2/acceleator/');
-    	rmdir($this->strTmpDir . '/Configurations2/images/');
-    	rmdir($this->strTmpDir . '/Configurations2/popupmenu/');
-    	rmdir($this->strTmpDir . '/Configurations2/statusbar/');
-    	rmdir($this->strTmpDir . '/Configurations2/floater/');
-    	rmdir($this->strTmpDir . '/Configurations2/menubar/');
-    	rmdir($this->strTmpDir . '/Configurations2/progressbar/');
-    	rmdir($this->strTmpDir . '/Configurations2/toolbar/');
-    	rmdir($this->strTmpDir . '/Configurations2/');
-    	rmdir($this->strTmpDir);
+    	unlink($this->strContentFile);
     }
 }
 
