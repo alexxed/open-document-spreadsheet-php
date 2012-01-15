@@ -17,7 +17,7 @@ class OpenDocument_Spreadsheet_Writer {
 	
 	public function __construct($strFile) {
 	    $this->strFile = $strFile;
-	    $this->strTmpDir = uniqid(dirname($this->strFile) . '/' . $this->strFile . '_');
+	    $this->strTmpDir = uniqid(dirname($this->strFile) . '/' . basename($this->strFile) . '_');
 	    mkdir($this->strTmpDir);
 	}
 	
